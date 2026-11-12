@@ -1,0 +1,62 @@
+name: Deploy to Cloudflare
+
+# Puts Biscuit online on Cloudflare's free plan so everyone shares the same accounts and chats.
+# Needs one repository secret: CLOUDFLARE_API_TOKEN (Settings -> Secrets and variables -> Actions).
+# Runs on every push to main, or by hand from the Actions tab.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check the app
+        run: node tools/check.mjs
+      - name: Is Cloudflare set up?
+        id: secret
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::notice::Add a CLOUDFLARE_API_TOKEN repository secret to put Biscuit online. See the README."
+            echo "ready=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=yes" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install
+        if: steps.secret.outputs.ready == 'yes'
+        run: npm ci
+      - name: Deploy
+        if: steps.secret.outputs.ready == 'yes'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler deploy 2>&1 | tee deploy.log
+          url=$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' deploy.log | head -1)
+          echo "Biscuit is live at $url" >> "$GITHUB_STEP_SUMMARY"
+          echo "URL=$url" >> "$GITHUB_ENV"
+      - name: Point the GitHub Pages site at the live server
+        if: steps.secret.outputs.ready == 'yes' && env.URL != ''
+        run: |
+          printf '{"url":"%s"}\n' "$URL" > server.json
+          if ! git diff --quiet -- server.json 2>/dev/null || ! git ls-files --error-unmatch server.json >/dev/null 2>&1; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add server.json
+            git commit -m "Point the website at $URL [skip ci]"
+            git push
+          fi

@@ -65,6 +65,8 @@
     on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
     connect() {
       this.close();
+      this.wanted = true;
+      if (this.config.realtime === 'ws') return this.connectWS();
       const es = new EventSource('/api/events?token=' + encodeURIComponent(this.token));
       this.es = es;
       let opened = false;
@@ -77,10 +79,37 @@
       es.onmessage = e => { let ev; try { ev = JSON.parse(e.data); } catch { return; } this.listeners.forEach(fn => fn(ev)); };
       es.onerror = () => this.listeners.forEach(fn => fn({ t: 'connection', ok: false }));
     }
-    close() { if (this.es) { this.es.close(); this.es = null; } }
+    // WebSocket live updates (used by the Cloudflare version), with automatic reconnects
+    connectWS() {
+      const ws = new WebSocket(location.origin.replace(/^http/, 'ws') + '/api/ws?token=' + encodeURIComponent(this.token));
+      this.ws = ws;
+      ws.onopen = () => {
+        if (this.wsOpened) this.listeners.forEach(fn => fn({ t: 'refresh' }));
+        this.wsOpened = true;
+        this.wsRetry = 0;
+        this.listeners.forEach(fn => fn({ t: 'connection', ok: true }));
+        clearInterval(this.ping);
+        this.ping = setInterval(() => { try { ws.send('ping'); } catch {} }, 25000);
+      };
+      ws.onmessage = e => { if (e.data === 'pong') return; let ev; try { ev = JSON.parse(e.data); } catch { return; } this.listeners.forEach(fn => fn(ev)); };
+      ws.onclose = () => {
+        clearInterval(this.ping);
+        if (this.ws !== ws || !this.wanted) return;
+        this.listeners.forEach(fn => fn({ t: 'connection', ok: false }));
+        const wait = Math.min(15000, 500 * 2 ** (this.wsRetry = (this.wsRetry || 0) + 1));
+        this.retryTimer = setTimeout(() => { if (this.wanted && this.token) this.connectWS(); }, wait);
+      };
+    }
+    close() {
+      this.wanted = false;
+      if (this.es) { this.es.close(); this.es = null; }
+      clearTimeout(this.retryTimer); clearInterval(this.ping);
+      if (this.ws) { const ws = this.ws; this.ws = null; try { ws.close(); } catch {} }
+    }
     upload(file, onProgress) {
-      const max = LIMITS.uploadMB * 1024 * 1024;
-      if (file.size > max) return Promise.reject(new Error(`${file.name} is over ${LIMITS.uploadMB} MB`));
+      const mb = (this.config.limits && this.config.limits.uploadMB) || LIMITS.uploadMB;
+      const max = mb * 1024 * 1024;
+      if (file.size > max) return Promise.reject(new Error(`${file.name} is over ${mb} MB`));
       return new Promise((resolve, reject) => {
         const x = new XMLHttpRequest();
         x.open('POST', '/api/upload');
@@ -232,6 +261,17 @@
           if (cfg && cfg.mode === 'server') return new ServerBackend(cfg);
         }
       } catch {}
+      // On the GitHub Pages copy: if the shared Biscuit server is online, go there instead.
+      for (const path of ['../server.json', 'server.json']) {
+        try {
+          const r = await fetch(path, { cache: 'no-store' });
+          const j = r.ok ? await r.json() : null;
+          if (j && /^https:\/\/[^\s"'<>]+$/.test(j.url || '') && new URL(j.url).origin !== location.origin) {
+            location.replace(j.url.replace(/\/$/, '') + '/' + location.hash);
+            await new Promise(() => {});
+          }
+        } catch {}
+      }
     }
     const b = new LocalBackend();
     await b.init();

@@ -5,10 +5,22 @@ Everything other chat apps charge for is free here. We call it the **Golden Bisc
 
 ## ▶️ [Open Biscuit](https://froodyofficial-maker.github.io/Biscuit-/)
 
-The link above runs Biscuit right in your browser. Accounts and chats are saved in that browser, so you can try everything instantly.
-To chat with friends on **other devices**, host the server (one click, free):
+## Put Biscuit online so friends can find you (free, about 5 minutes)
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/froodyofficial-maker/Biscuit-)
+GitHub Pages can only show files, so on its own every browser gets a separate copy of Biscuit.
+To share accounts, servers and messages, Biscuit runs its server on **Cloudflare's free plan**. You set this up once:
+
+1. **Make a free Cloudflare account** at <https://dash.cloudflare.com/sign-up> and confirm your email. No card needed.
+2. In the Cloudflare dashboard, open **Workers & Pages** once. If it asks you to choose a `workers.dev` subdomain, pick any name.
+3. **Create an API token:** click your profile icon (top right) → **Profile** → **API Tokens** → **Create Token** →
+   next to **Edit Cloudflare Workers**, click **Use template** → under *Account Resources* pick your account,
+   under *Zone Resources* pick **All zones** → **Continue to summary** → **Create Token**. Copy the token.
+4. **Give it to GitHub:** in this repository go to **Settings → Secrets and variables → Actions → New repository secret**.
+   Name it `CLOUDFLARE_API_TOKEN`, paste the token, and save.
+5. Go to the **Actions** tab → **Deploy to Cloudflare** → **Run workflow**.
+
+When it finishes, the run's summary shows your live address (`https://biscuit.<your-name>.workers.dev`), and the
+GitHub Pages link above sends everyone there automatically. From then on every push to `main` updates the live site.
 
 ![Biscuit chat](docs/screenshots/chat.jpg)
 
@@ -31,6 +43,9 @@ The [website](https://froodyofficial-maker.github.io/Biscuit-/) is served by Git
 | `PORT=8080` | Port to listen on (default `3000`). |
 | `DATA_DIR=./data` | Where accounts, messages (`db.json`) and uploads are kept. |
 | `GIPHY_API_KEY=…` or `TENOR_API_KEY=…` | Optional. Turns on GIF search for everyone on the server. |
+
+On Cloudflare, uploads are limited to 25 MB each, and all data lives in one Durable Object's SQLite storage
+(`worker/index.js`, configured in `wrangler.toml`). To turn on GIF search there, run `npx wrangler secret put GIPHY_API_KEY`.
 
 ## Features
 
@@ -102,7 +117,9 @@ Biscuit also works on phones:
 ## How it's built
 
 ```
-server.mjs              HTTP server: accounts, uploads, live updates (Server-Sent Events), GIF search proxy
+server.mjs              Node server: accounts, uploads, live updates (Server-Sent Events), GIF search proxy
+worker/index.js         the same server for Cloudflare Workers (Durable Object + SQLite + WebSockets)
+wrangler.toml           Cloudflare config; .github/workflows/deploy.yml deploys it
 public/index.html       app shell
 public/css/app.css      all styling: themes, decorations, profile effects
 public/js/core.js       the chat model (users, servers, messages, reactions, emoji, bot). Runs on the server AND in the browser
