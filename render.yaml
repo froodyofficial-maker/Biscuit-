@@ -1,0 +1,12 @@
+# One-click server hosting on Render (https://render.com): real accounts and chat shared across devices.
+services:
+  - type: web
+    name: biscuit
+    runtime: node
+    plan: free
+    buildCommand: "echo no build needed"
+    startCommand: node server.mjs
+    healthCheckPath: /api/config
+    envVars:
+      - key: NODE_VERSION
+        value: "22"

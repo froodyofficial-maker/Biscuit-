@@ -3,9 +3,16 @@
 A chat app for you and your friends: servers, channels, DMs, GIFs, emoji, screenshots and fully customizable profiles.
 Everything other chat apps charge for is free here. We call it the **Golden Biscuit**, and every account has it.
 
+## ▶️ [Open Biscuit](https://froodyofficial-maker.github.io/Biscuit-/)
+
+The link above runs Biscuit right in your browser. Accounts and chats are saved in that browser, so you can try everything instantly.
+To chat with friends on **other devices**, host the server (one click, free):
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/froodyofficial-maker/Biscuit-)
+
 ![Biscuit chat](docs/screenshots/chat.jpg)
 
-## Run it
+## Run it yourself
 
 You need [Node.js](https://nodejs.org) 18 or newer. There is nothing to install: Biscuit has no dependencies.
 
@@ -16,7 +23,8 @@ npm start
 Then open <http://localhost:3000>. Friends on your network can join at `http://<your-computer's-ip>:3000`.
 
 **No server?** Open `public/index.html` straight from disk, or host the `public/` folder on any static host such as GitHub Pages.
-Biscuit then runs in **local mode**: accounts and chats are saved in that browser only. Everything else works the same.
+Biscuit then runs in **browser mode**: accounts and chats are saved in that browser only. Everything else works the same.
+The [website](https://froodyofficial-maker.github.io/Biscuit-/) is published from `public/` by `.github/workflows/pages.yml` on every push to `main`.
 
 | Setting | What it does |
 | --- | --- |

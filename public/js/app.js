@@ -285,7 +285,7 @@
     if (S.b.mode === 'local') {
       const accts = S.b.accounts();
       local.hidden = false;
-      local.innerHTML = `<div class="local-note"><b>Local mode.</b> No server is running, so accounts and chats are saved in this browser. Run <code>npm start</code> to chat across devices.</div>` +
+      local.innerHTML = `<div class="local-note"><b>Browser mode.</b> Your account and chats are saved in this browser, so it works instantly with nothing to install. To chat with friends on other devices, run Biscuit on a server (see the README).</div>` +
         (accts.length && !reg ? `<div class="acct-list">${accts.map(u => `<button class="acct" data-act="auth-pick" data-name="${esc(u.username)}">${avatarHTML(Object.assign({}, u, { presence: 'offline' }), 32, { status: false, noact: true })}<span>${esc(dname(u))}<small>@${esc(u.username)}</small></span></button>`).join('')}</div>` : '');
     } else local.hidden = true;
     setTimeout(() => $(reg ? '#auth-form [name=displayName]' : '#auth-form [name=username]').focus(), 50);
