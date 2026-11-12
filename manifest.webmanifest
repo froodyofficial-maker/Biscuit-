@@ -1,0 +1,10 @@
+{
+  "name": "Biscuit",
+  "short_name": "Biscuit",
+  "description": "Chat with friends, build your profile, every perk free.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#1e1f22",
+  "theme_color": "#1e1f22",
+  "icons": [{ "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
