@@ -24,7 +24,7 @@ Then open <http://localhost:3000>. Friends on your network can join at `http://<
 
 **No server?** Open `public/index.html` straight from disk, or host the `public/` folder on any static host such as GitHub Pages.
 Biscuit then runs in **browser mode**: accounts and chats are saved in that browser only. Everything else works the same.
-The [website](https://froodyofficial-maker.github.io/Biscuit-/) is published from `public/` by `.github/workflows/pages.yml` on every push to `main`.
+The [website](https://froodyofficial-maker.github.io/Biscuit-/) is served by GitHub Pages from the `main` branch: the root `index.html` opens the app in `public/`.
 
 | Setting | What it does |
 | --- | --- |
