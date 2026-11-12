@@ -180,7 +180,7 @@
     }
     get loggedIn() { return !!this.uid; }
     async register(username, password, displayName) {
-      if (!password || password.length < 6) throw new Error('Passwords need at least 6 characters');
+      if (!password) throw new Error('Type a password');
       const u = this.core.createUser(username, displayName);
       const salt = Math.random().toString(36).slice(2);
       this.credentials[u.id] = { salt, hash: await sha(salt + password) };
@@ -198,7 +198,7 @@
     async changePassword(current, next) {
       const c = this.credentials[this.uid];
       if (!c || c.hash !== await sha(c.salt + current)) throw new Error('Your current password is wrong');
-      if (!next || next.length < 6) throw new Error('Passwords need at least 6 characters');
+      if (!next) throw new Error('Type a new password');
       c.hash = await sha(c.salt + next);
       this.save();
     }

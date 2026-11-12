@@ -524,6 +524,21 @@ code.inline { white-space: pre-wrap; }
 @keyframes aurora { from { background-position: 0% 0; } to { background-position: 100% 0; } }
 
 /* ---------- friends & golden pages ---------- */
+.nav-item.create .i { color: var(--ok); }
+.server-ctas { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.cta-card { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 12px; background: var(--card); border: 1px solid var(--border); text-align: left; transition: transform .15s, border-color .15s; }
+.cta-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.cta-ic { font-size: 32px; flex: none; }
+.cta-card b { display: block; color: var(--text-strong); font-size: 16px; }
+.cta-card small { color: var(--muted); font-size: 13px; }
+.tpl-list { display: grid; gap: 8px; }
+.tpl { position: relative; display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); text-align: left; font-size: 16px; }
+.tpl:hover { background: var(--active); }
+.tpl b { flex: 1; color: var(--text-strong); }
+.tpl-ic { font-size: 28px; width: 40px; text-align: center; }
+.tpl-arrow { transform: rotate(-90deg); color: var(--muted); }
+.tpl-head { position: absolute; top: -26px; left: 0; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+.tpl:nth-child(2) { margin-top: 30px; }
 .friends { padding: 16px 24px; overflow-y: auto; flex: 1; }
 .add-friend { padding: 4px 0 20px; border-bottom: 1px solid var(--border); }
 .add-friend h3 { margin: 0 0 4px; color: var(--text-strong); text-transform: uppercase; font-size: 16px; }

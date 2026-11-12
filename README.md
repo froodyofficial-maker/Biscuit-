@@ -34,7 +34,11 @@ The [website](https://froodyofficial-maker.github.io/Biscuit-/) is served by Git
 
 ## Features
 
+### Accounts
+- Pick **any username and any password**: spaces, capitals, symbols and emoji all work. Usernames are unique, ignoring upper/lower case.
+
 ### Chat
+- **Anyone can create servers**: start from scratch or a template (Gaming, Friends, Study Group, School Club, Artists & Creators, Local Community)
 - Servers with text channels, invite links and a member list with live online / idle / do-not-disturb / invisible status
 - Direct messages with anyone, by username
 - Replies, editing (press ↑ to edit your last message), deleting, typing indicators, unread dots and mention badges

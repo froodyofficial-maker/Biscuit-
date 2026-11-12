@@ -21,8 +21,8 @@
       <p id="auth-sub" class="muted">We're so excited to see you again!</p>
       <form id="auth-form" autocomplete="on">
         <label class="field" id="f-display" hidden><span>Display name</span><input name="displayName" maxlength="32" autocomplete="nickname"></label>
-        <label class="field"><span>Username <b class="req">*</b></span><input name="username" required maxlength="32" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
-        <label class="field"><span>Password <b class="req">*</b></span><input name="password" type="password" required minlength="6" autocomplete="current-password"></label>
+        <label class="field"><span>Username <b class="req">*</b></span><input name="username" required maxlength="100" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+        <label class="field"><span>Password <b class="req">*</b></span><input name="password" type="password" required autocomplete="current-password"></label>
         <p id="auth-error" class="form-error" hidden></p>
         <button class="btn primary block" type="submit" id="auth-submit">Log In</button>
       </form>

@@ -61,9 +61,10 @@ function auth(req, url) {
   if (!s || !core.s.users[s.uid]) throw new BiscuitError('Please log in again', 401);
   return { uid: s.uid, token };
 }
+// Any password is allowed, as long as there is one.
 function checkPassword(pw) {
-  if (typeof pw !== 'string' || pw.length < 6) throw new BiscuitError('Passwords need at least 6 characters');
-  if (pw.length > 200) throw new BiscuitError('That password is too long');
+  if (typeof pw !== 'string' || !pw.length) throw new BiscuitError('Type a password');
+  if (pw.length > 1000) throw new BiscuitError('That password is too long');
 }
 
 // ---------- http helpers ----------

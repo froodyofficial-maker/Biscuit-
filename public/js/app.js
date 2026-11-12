@@ -439,6 +439,7 @@
       body.innerHTML = `
         <div class="nav-item ${S.route.page === 'friends' ? 'active' : ''}" data-act="go" data-sid="@me">${ic('users')}<span>Friends</span></div>
         <div class="nav-item golden ${S.route.page === 'golden' ? 'active' : ''}" data-act="go" data-sid="@me" data-cid="golden">${ic('sparkle')}<span>Golden Biscuit</span><span class="free-pill">FREE</span></div>
+        <div class="nav-item create" data-act="add-server">${ic('plus')}<span>Create a Server</span></div>
         <div class="sb-label"><span>Direct Messages</span><button class="icon-btn" data-act="quick-dm" title="Create DM">${ic('plus')}</button></div>
         ${dms.length ? dms.map(ch => {
           const o = dmOther(ch), n = mentionCount(ch);
@@ -550,6 +551,10 @@
     let people = [...ids].map(user).sort((a, b) => dname(a).localeCompare(dname(b)));
     if (S.friendsTab === 'online') people = people.filter(u => u.presence !== 'offline');
     return `<div class="friends">
+      <div class="server-ctas">
+        <button class="cta-card" data-act="add-server"><span class="cta-ic">🏰</span><span><b>Create a server</b><small>Your own place for friends, games, study groups or clubs.</small></span></button>
+        <button class="cta-card" data-act="join-server"><span class="cta-ic">🧭</span><span><b>Join a server</b><small>Got an invite link or code? Hop in.</small></span></button>
+      </div>
       <form class="add-friend" data-form="start-dm">
         <h3>Start a conversation</h3><p class="muted">Message anyone on Biscuit by their username.</p>
         <div class="add-row"><input name="username" placeholder="Enter a username, like biscuit" autocomplete="off" spellcheck="false"><button class="btn primary">Send Message</button></div>
@@ -1033,17 +1038,33 @@
     return all.find(e => e.name === name && e.serverId === S.route.sid) || all.find(e => e.name === name) || all.find(e => e.name.toLowerCase() === name.toLowerCase());
   }
   function prepareOutgoing(text) {
-    return codeSafe(text, part => part
+    const out = codeSafe(text, part => part
       .replace(/:([A-Za-z0-9_+-]{2,32}):/g, (all, name) => {
         const ce = findCustomEmoji(name);
         if (ce) return `<:${ce.name}:${ce.id}>`;
         const e = EM.byName[name.toLowerCase()];
         return e ? e.char : all;
-      })
-      .replace(/(^|[^\w<])@([a-z0-9_.]{2,32})/gi, (all, pre, name) => {
-        const u = Object.values(S.users).find(x => x.username === name.toLowerCase());
-        return u ? `${pre}<@${u.id}>` : all;
       }));
+    return codeSafe(out, linkMentions);
+  }
+  // "@name" -> <@id> for any username, including ones with spaces or emoji. Longest names win.
+  function linkMentions(text) {
+    if (!text.includes('@')) return text;
+    const users = Object.values(S.users).filter(u => u.username).sort((a, b) => b.username.length - a.username.length);
+    let out = '';
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === '@' && (i === 0 || !/[\p{L}\p{N}_<]/u.test(text[i - 1]))) {
+        const rest = text.slice(i + 1).toLowerCase();
+        const u = users.find(x => {
+          const n = x.username.toLowerCase();
+          return rest.startsWith(n) && !/^[\p{L}\p{N}_]/u.test(rest.slice(n.length));
+        });
+        if (u) { out += `<@${u.id}>`; i += u.username.length; continue; }
+      }
+      out += ch;
+    }
+    return out;
   }
   function toEditable(text) {
     return String(text || '').replace(/<@([A-Za-z0-9-]+)>/g, (all, id) => S.users[id] ? '@' + S.users[id].username : all).replace(/<a?:([A-Za-z0-9_]+):[A-Za-z0-9-]+>/g, ':$1:');
@@ -1154,7 +1175,7 @@
   function updateAutocomplete() {
     const t = $('#input'), ac = $('#ac');
     const before = t.value.slice(0, t.selectionStart);
-    const m = /(^|\s)([:@])([\w.+-]*)$/.exec(before);
+    const m = /(^|\s)(:)([\w+-]*)$/.exec(before) || /(^|\s)(@)([^\s@]*)$/.exec(before);
     if (!m || (m[2] === ':' && m[3].length < 2)) { ac.hidden = true; return; }
     const q = m[3].toLowerCase();
     let items = [];
@@ -1166,7 +1187,7 @@
     } else {
       const ch = S.channels[S.route.cid];
       const ids = ch.type === 'dm' ? ch.members : (S.servers[ch.serverId] || { members: [] }).members;
-      items = ids.map(user).filter(u => u.username.includes(q) || dname(u).toLowerCase().includes(q)).slice(0, 10)
+      items = ids.map(user).filter(u => u.username.toLowerCase().includes(q) || dname(u).toLowerCase().includes(q)).slice(0, 10)
         .map(u => ({ ins: `@${u.username} `, html: `${avatarHTML(u, 24, { noact: true })}<span>${esc(dname(u))}</span><small>@${esc(u.username)}</small>` }));
     }
     if (!items.length) { ac.hidden = true; return; }
@@ -1473,9 +1494,9 @@
     if (tab === 'account') {
       c.innerHTML = `<h2>My Account</h2>
         <div class="acct-card">${profileCardHTML(u, { preview: true })}</div>
-        <div class="set-group"><h3>Username</h3><form class="inline-form" data-form="username"><input name="username" value="${esc(u.username)}" maxlength="32" autocapitalize="none" spellcheck="false"><button class="btn primary">Save</button></form>
-        <p class="hint">2–32 characters: letters, numbers, <code>_</code> and <code>.</code></p></div>
-        <div class="set-group"><h3>Password</h3><form class="pw-form" data-form="password"><input type="password" name="current" placeholder="Current password" autocomplete="current-password"><input type="password" name="next" placeholder="New password (6+ characters)" autocomplete="new-password"><button class="btn primary">Change Password</button></form></div>
+        <div class="set-group"><h3>Username</h3><form class="inline-form" data-form="username"><input name="username" value="${esc(u.username)}" maxlength="100" autocapitalize="none" spellcheck="false"><button class="btn primary">Save</button></form>
+        <p class="hint">Anything you like: spaces, capitals, symbols and emoji all work.</p></div>
+        <div class="set-group"><h3>Password</h3><form class="pw-form" data-form="password"><input type="password" name="current" placeholder="Current password" autocomplete="current-password"><input type="password" name="next" placeholder="New password" autocomplete="new-password"><button class="btn primary">Change Password</button></form></div>
         <div class="set-group"><h3>Where your data lives</h3><p class="hint">${S.b.mode === 'server' ? 'You are connected to a Biscuit server. Your account, messages and uploads live on that server.' : 'Local mode: no server is running, so everything is stored in this browser only. Start the Biscuit server (<code>npm start</code>) to chat with friends on other devices.'}</p></div>`;
     } else if (tab === 'profiles') {
       profileEditor(c);
@@ -1601,41 +1622,63 @@
   }
 
   // ------------------------------------------------------------------ server modals
+  const SERVER_TEMPLATES = [
+    ['custom', '✨', 'Create My Own'], ['gaming', '🎮', 'Gaming'], ['friends', '💛', 'Friends'], ['study', '📚', 'Study Group'],
+    ['club', '🎪', 'School Club'], ['creators', '🎨', 'Artists & Creators'], ['community', '🏡', 'Local Community'],
+  ];
   function addServerModal(startJoin) {
-    const m = modal(`<div class="m-head center"><h2>${startJoin ? 'Join a Server' : 'Create Your Server'}</h2><p class="muted">${startJoin ? 'Enter an invite code or link below.' : 'Your server is where you and your friends hang out. Make yours and start talking.'}</p></div>
-      <div class="m-body">
-        ${startJoin ? `<form data-form="join"><label class="field"><span>Invite link or code</span><input name="code" placeholder="biscuit  or  ${esc(inviteLink('hTKzmak'))}" autofocus></label><button class="btn primary block">Join Server</button></form>`
-        : `<form data-form="create"><div class="icon-up" data-act="cs-icon"><div class="iu-circle">${ic('upload')}<span>UPLOAD</span></div></div><input type="hidden" name="icon">
-            <label class="field"><span>Server name</span><input name="name" value="${esc(dname(S.me))}'s server" maxlength="100" autofocus></label>
-            <button class="btn primary block">Create</button></form>
-           <div class="m-or"><span>Have an invite already?</span><button class="btn ghost block" data-swap>Join a Server</button></div>`}
-      </div>`, { cls: 'small' });
-    const swap = m.el.querySelector('[data-swap]');
-    if (swap) swap.onclick = () => { m.close(); addServerModal(true); };
-    m.el.addEventListener('submit', async e => {
-      e.preventDefault();
-      const f = e.target;
+    const m = modal('', { cls: 'small' });
+    let template = 'custom', icon = '';
+    const step1 = () => {
+      m.el.innerHTML = `<div class="m-head center"><h2>Create Your Server</h2><p class="muted">Your server is where you and your friends hang out. Pick a starting point, or make your own.</p></div>
+        <div class="m-body"><div class="tpl-list">${SERVER_TEMPLATES.map(([id, e, label], i) => `<button class="tpl" data-tpl="${id}">${i === 1 ? '<span class="tpl-head">Start from a template</span>' : ''}<span class="tpl-ic">${e}</span><b>${label}</b>${ic('chevron', 'tpl-arrow')}</button>`).join('')}</div>
+        <div class="m-or"><span>Have an invite already?</span><button class="btn ghost block" data-join>Join a Server</button></div></div>`;
+    };
+    const step2 = () => {
+      const label = SERVER_TEMPLATES.find(t => t[0] === template)[2];
+      const channels = (globalThis.BiscuitCore.TEMPLATES[template] || []).map(c => '#' + c[0]).join('  ');
+      m.el.innerHTML = `<div class="m-head center"><h2>Customize Your Server</h2><p class="muted">Give your new server a personality with a name and an icon. You can always change it later.</p></div>
+        <form class="m-body" data-create><div class="icon-up" data-icon><div class="iu-circle">${icon ? `<img src="${esc(icon)}" alt="">` : `${ic('upload')}<span>UPLOAD</span>`}</div></div>
+          <label class="field"><span>Server name</span><input name="name" value="${esc(dname(S.me))}'s ${template === 'custom' ? 'server' : esc(label.toLowerCase())}" maxlength="100" autofocus></label>
+          <p class="hint">Channels: ${esc(channels)}</p></form>
+        <div class="m-foot"><button class="btn link left" data-back>Back</button><button class="btn primary" data-create-btn>Create</button></div>`;
+      setTimeout(() => { const i = m.el.querySelector('[name=name]'); if (i) { i.focus(); i.select(); } }, 30);
+    };
+    const step3 = () => {
+      m.el.innerHTML = `<div class="m-head center"><h2>Join a Server</h2><p class="muted">Enter an invite code or link below.</p></div>
+        <form class="m-body" data-joinform><label class="field"><span>Invite link or code</span><input name="code" placeholder="biscuit  or  ${esc(inviteLink('hTKzmak'))}" autofocus></label>
+          <p class="hint">Try the code <code>biscuit</code> to join Biscuit HQ.</p></form>
+        <div class="m-foot"><button class="btn link left" data-back>Back</button><button class="btn primary" data-join-btn>Join Server</button></div>`;
+      setTimeout(() => { const i = m.el.querySelector('[name=code]'); if (i) i.focus(); }, 30);
+    };
+    const create = async () => {
+      const name = m.el.querySelector('[name=name]').value;
       try {
-        if (f.dataset.form === 'join') {
-          m.close();
-          await joinInvite(f.code.value.trim());
-        } else {
-          const r = await call('createServer', { name: f.name.value, icon: f.icon.value });
-          m.close();
-          const st = await S.b.state(); load(st);
-          prefs.serverOrder.push(r.serverId); savePrefs();
-          go(r.serverId, r.channelId);
-          toast('Server created! Invite your friends 🎉', 'ok');
-        }
+        const r = await call('createServer', { name, icon, template });
+        m.close();
+        const st = await S.b.state(); load(st);
+        prefs.serverOrder.push(r.serverId); savePrefs();
+        document.body.classList.remove('drawer-open');
+        go(r.serverId, r.channelId);
+        toast('Server created! Invite your friends 🎉', 'ok');
       } catch {}
-    });
+    };
+    const join = async () => { const code = m.el.querySelector('[name=code]').value.trim(); if (!code) return; m.close(); document.body.classList.remove('drawer-open'); await joinInvite(code); };
     m.el.addEventListener('click', async e => {
-      if (e.target.closest('[data-act="cs-icon"]')) {
-        e.stopPropagation();
+      const b = e.target.closest('button, [data-icon]');
+      if (!b) return;
+      if (b.dataset.tpl) { template = b.dataset.tpl; step2(); }
+      else if ('join' in b.dataset) step3();
+      else if ('back' in b.dataset) step1();
+      else if ('createBtn' in b.dataset) create();
+      else if ('joinBtn' in b.dataset) join();
+      else if ('icon' in b.dataset) {
         const r = await uploadImage('image/*');
-        if (r) { m.el.querySelector('[name=icon]').value = r.url; m.el.querySelector('.iu-circle').innerHTML = `<img src="${esc(r.url)}" alt="">`; }
+        if (r) { icon = r.url; b.querySelector('.iu-circle').innerHTML = `<img src="${esc(r.url)}" alt="">`; }
       }
-    }, true);
+    });
+    m.el.addEventListener('submit', e => { e.preventDefault(); if ('create' in e.target.dataset) create(); else join(); });
+    startJoin ? step3() : step1();
   }
   function inviteModal() {
     const sv = S.servers[S.route.sid];

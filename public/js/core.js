@@ -14,6 +14,7 @@
     localUploadMB: 25,      // local mode keeps files in the browser
     bio: 400,
     displayName: 32,
+    username: 100,
     pronouns: 40,
     status: 128,
     serverName: 100,
@@ -30,6 +31,15 @@
   const FONTS = ['default', 'serif', 'mono', 'rounded', 'script', 'chunky'];
   const STATUSES = ['online', 'idle', 'dnd', 'invisible'];
   const BOT_ID = 'u-biscuit-bot';
+  const TEMPLATES = {
+    custom: [['general', 'Say hi!'], ['memes', 'GIFs and screenshots']],
+    gaming: [['general', 'Talk about anything'], ['looking-for-group', 'Find people to play with'], ['clips-and-highlights', 'Show off your best plays'], ['memes', 'GIFs and screenshots']],
+    friends: [['general', 'Hang out'], ['plans', 'What are we doing this weekend?'], ['photos', 'Pics or it didn\'t happen'], ['memes', 'GIFs and screenshots']],
+    study: [['welcome-and-rules', 'Read me first'], ['general', 'Chat'], ['homework-help', 'Ask questions, share answers'], ['resources', 'Notes, links and files'], ['off-topic', 'Take a break']],
+    club: [['announcements', 'News from the club'], ['general', 'Chat'], ['events', 'Meetups and dates'], ['ideas', 'Pitch your ideas']],
+    creators: [['showcase', 'Share what you made'], ['general', 'Chat'], ['feedback', 'Ask for feedback'], ['inspiration', 'References and mood boards']],
+    community: [['welcome', 'Say hi and introduce yourself'], ['general', 'Chat'], ['events', 'What\'s happening'], ['off-topic', 'Anything goes']],
+  };
   const HQ_ID = 's-biscuit-hq';
 
   class BiscuitError extends Error {
@@ -197,15 +207,19 @@
       };
     }
 
+    // Usernames can be anything. Matching ignores upper/lower case, and "@name" also finds "name".
     findUserByUsername(name) {
-      name = String(name || '').trim().replace(/^@/, '').toLowerCase();
-      return Object.values(this.s.users).find(u => u.username === name) || null;
+      const key = String(name == null ? '' : name).trim().replace(/\s+/g, ' ').toLowerCase();
+      if (!key) return null;
+      const all = Object.values(this.s.users);
+      return all.find(u => u.username.toLowerCase() === key) ||
+        (key.startsWith('@') ? all.find(u => u.username.toLowerCase() === key.slice(1)) : null) || null;
     }
 
     validUsername(name) {
-      name = String(name || '').trim().toLowerCase();
-      if (!/^[a-z0-9_.]{2,32}$/.test(name)) fail('Usernames are 2–32 characters: letters, numbers, _ and .');
-      if (/\.\./.test(name)) fail('Usernames cannot contain ".."');
+      name = String(name == null ? '' : name).trim().replace(/\s+/g, ' ');
+      if (!name) fail('Type a username');
+      if (name.length > LIMITS.username) fail(`That username is too long (max ${LIMITS.username} characters)`);
       return name;
     }
 
@@ -322,7 +336,7 @@
       sv.invite = this.freeInvite();
       this.s.invites[sv.invite] = sv.id;
       this.s.servers[sv.id] = sv;
-      for (const [n, t] of [['general', 'Say hi!'], ['memes', 'GIFs and screenshots']]) {
+      for (const [n, t] of TEMPLATES[p.template] || TEMPLATES.custom) {
         const ch = { id: newId('c-'), serverId: sv.id, type: 'text', name: n, topic: t, createdAt: Date.now(), lastMessageId: '', lastAuthorId: '' };
         this.s.channels[ch.id] = ch;
         this.s.messages[ch.id] = [];
@@ -701,5 +715,5 @@
     'sendMessage', 'editMessage', 'deleteMessage', 'react', 'typing', 'getMessages', 'getUser',
   ]);
 
-  globalThis.BiscuitCore = { Core, BiscuitError, LIMITS, DECORATIONS, EFFECTS, FONTS, STATUSES, RPC, BOT_ID, HQ_ID, newId };
+  globalThis.BiscuitCore = { TEMPLATES, Core, BiscuitError, LIMITS, DECORATIONS, EFFECTS, FONTS, STATUSES, RPC, BOT_ID, HQ_ID, newId };
 })();
